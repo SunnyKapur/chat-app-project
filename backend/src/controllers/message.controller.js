@@ -10,6 +10,12 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    if (receiver === req.user._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot send messages to yourself",
+      });
+    }
+
     const message = await MessageModel.create({
       sender: req.user._id,
       receiver,
@@ -23,6 +29,34 @@ export const sendMessage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: error.message,
+    });
+  }
+};
+
+export const getMessage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const messages = await MessageModel.find({
+      $or: [
+        {
+          sender: req.user._id,
+          receiver: userId,
+        },
+        {
+          sender: userId,
+          receiver: req.user._id,
+        },
+      ],
+    }).sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      messages,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
