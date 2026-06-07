@@ -1,309 +1,483 @@
-# Updated Current Progress
+# Real-Time Communication System
 
-## Backend Completed
+## Overview
 
-### Authentication
+A full-stack real-time chat application built using:
+
+* React
+* Redux Toolkit
+* React Router
+* Tailwind CSS
+* Node.js
+* Express.js
+* MongoDB
+* Socket.IO
+* JWT Authentication
+
+The application supports user authentication, protected routes, private messaging, chat history, and real-time communication.
+
+---
+
+# Backend Features
+
+## Authentication
+
+Implemented:
 
 * User Registration
 * User Login
 * JWT Token Generation
 * HTTP Only Cookie Authentication
 * Authentication Middleware
-* Protected Route (`/api/me`)
+* Protected Routes
+* Session Restore API
 
-### Messaging
+### Register
 
-* Message Model
-* Send Message API
-* Chat History API
-* Self Message Validation
+Endpoint:
 
-### Socket.IO
+POST /api/auth/register
 
-* Socket.IO Server Setup
-* Socket Connection Handling
-* Socket Disconnection Handling
-* User Room Setup Event
-* Send Message Socket Event
-* Receive Message Socket Event
+Request:
 
----
-
-## Frontend Completed
-
-### UI
-
-* Register Page
-* Login Page
-* Chat Page Structure
-* Tailwind CSS Setup
-
-### Form Handling
-
-* React Hook Form Integration
-* Form Validation
-* Register Form Submission
-* Login Form Submission
-
-### API Integration
-
-* Axios Setup
-* Register API Connected
-* Login API Connected
-* Cookie-Based Authentication Support
-
-### Routing
-
-* React Router Setup
-* Auth Layout
-* Main Layout
-* Chat Route
-
-Routes:
-
-```text
-/
-  └── Authentication Page
-
-/chat
-  └── Chat Page
+```json
+{
+  "username": "sunny",
+  "email": "sunny@gmail.com",
+  "password": "123456"
+}
 ```
 
 ---
 
-# Frontend Structure
+### Login
 
-```text
-frontend
-│
-├── src
-│
-├── layouts
-│   ├── AuthLayout.jsx
-│   └── MainLayout.jsx
-│
-├── pages
-│   ├── Register.jsx
-│   ├── Login.jsx
-│   └── Chat.jsx
-│
-├── routes
-│   └── AppRoutes.jsx
-│
-├── services
-│   └── api.js
-│
-├── App.jsx
-├── main.jsx
-└── index.css
+Endpoint:
+
+POST /api/auth/login
+
+Request:
+
+```json
+{
+  "email": "sunny@gmail.com",
+  "password": "123456"
+}
 ```
+
+After successful login:
+
+* JWT Token is generated
+* Token is stored inside HTTP Only Cookie
 
 ---
 
-# Socket.IO Flow
+### Current User
 
-## Step 1
+Endpoint:
 
-Frontend connects to the Socket.IO server.
+GET /api/auth/me
 
-```text
-Client
-  ↓
-Socket Connection
-  ↓
-Server
-```
+Purpose:
+
+Returns currently authenticated user information.
+
+Authentication Middleware:
+
+* Reads cookie token
+* Verifies JWT
+* Finds user in MongoDB
+* Attaches user to req.user
 
 ---
 
-## Step 2
+# Messaging System
 
-User joins a private room.
+## Message Model
 
-```javascript
-socket.emit("setup", userId);
+Fields:
+
+* sender
+* receiver
+* content
+* createdAt
+* updatedAt
+
+---
+
+## Send Message
+
+Endpoint:
+
+POST /api/messages
+
+Request:
+
+```json
+{
+  "receiver": "USER_ID",
+  "content": "Hello Rahul"
+}
 ```
 
-Server:
+Validation:
 
-```javascript
-socket.join(userId);
-```
+* Receiver required
+* Content required
+* User cannot send message to themselves
+
+---
+
+## Get Conversation
+
+Endpoint:
+
+GET /api/messages/:userId
+
+Purpose:
+
+Returns complete conversation between:
+
+Current User ↔ Selected User
 
 Example:
 
-```text
-Sunny → Room 111
-Rahul → Room 222
-```
+Sunny ↔ Rahul
+
+Includes:
+
+* Sent messages
+* Received messages
+
+Sorted by creation time.
 
 ---
 
-## Step 3
+# Socket.IO
 
-User sends a real-time message.
+Implemented:
+
+* Socket Server Setup
+* Connection Event
+* Disconnection Event
+* Setup Event
+* Join User Room
+* Send Message Event
+* Receive Message Event
+
+---
+
+## Socket Flow
+
+User connects
+
+↓
+
+Socket Connected
+
+↓
+
+socket.emit("setup", userId)
+
+↓
+
+Server joins private room
+
+↓
+
+socket.emit("send-message")
+
+↓
+
+Server forwards message
+
+↓
+
+Receiver gets real-time message
+
+---
+
+# Frontend Features
+
+## UI
+
+Completed:
+
+* Register Page
+* Login Page
+* Chat Page Placeholder
+* Responsive Forms
+* Tailwind CSS Setup
+
+---
+
+## React Hook Form
+
+Implemented:
+
+* Register Form
+* Login Form
+* Validation
+* Form Submission Handling
+
+---
+
+## Axios
+
+Configured:
+
+* Base URL
+* Cookie Support
+* API Integration
+
+Connected APIs:
+
+* Register
+* Login
+* Current User
+
+---
+
+# Redux Toolkit
+
+Implemented:
+
+## Auth Slice
+
+State:
 
 ```javascript
-socket.emit("send-message", {
-  senderId,
-  receiverId,
-  content
-});
+{
+  user: null,
+  isAuthenticated: false,
+  isLoading: true
+}
 ```
+
+Actions:
+
+* addUser()
+* setLoadingFalse()
+
+Purpose:
+
+* Store authenticated user
+* Manage route protection
+* Restore login session
 
 ---
 
-## Step 4
+# Route Protection
 
-Server forwards the message.
+## Public Routes
 
-```javascript
-io.to(receiverId).emit(
-  "receive-message",
-  data
-);
-```
+Protected from authenticated users.
 
----
+Example:
 
-## Step 5
+/
+/register
 
-Receiver gets the message instantly.
+If user already exists:
 
-```text
-Sunny
-  ↓
-Server
-  ↓
-Rahul
-```
-
-No page refresh required.
+Redirect → /chat
 
 ---
 
-# Complete Application Flow
+## Protected Routes
 
-## User Registration
+Example:
 
-```text
-Register Form
-  ↓
-POST /api/auth/register
-  ↓
-MongoDB
-  ↓
-User Created
-```
+/chat
+
+If user is not authenticated:
+
+Redirect → /
 
 ---
 
-## User Login
+# Session Persistence
 
-```text
-Login Form
-  ↓
-POST /api/auth/login
-  ↓
-JWT Token Generated
-  ↓
-HTTP Only Cookie
-```
+Application Startup Flow:
+
+App Load
+
+↓
+
+GET /api/auth/me
+
+↓
+
+Cookie Valid?
+
+↓
+
+Yes → Redux User Updated
+
+↓
+
+Redirect to Chat
+
+OR
+
+↓
+
+No → Stop Loading
+
+↓
+
+Show Login Page
 
 ---
 
-## Authentication
+# React Router Structure
 
-```text
-Request
-  ↓
-Auth Middleware
-  ↓
-Verify JWT
-  ↓
-Find User
-  ↓
-req.user
-```
+Routes:
+
+/
+
+* Login
+
+/register
+
+* Register
+
+/chat
+
+* Chat Application
 
 ---
 
-## Messaging
+# Current Project Structure
 
-```text
+Frontend
+
+src
+
+├── app
+
+├── features
+
+├── layouts
+
+├── pages
+
+│ ├── Login.jsx
+
+│ ├── Register.jsx
+
+│ ├── Chat.jsx
+
+│ ├── PublicRoute.jsx
+
+│ └── Protected.jsx
+
+├── routes
+
+│ └── AppRoutes.jsx
+
+├── services
+
+│ └── api.js
+
+└── main.jsx
+
+Backend
+
+src
+
+├── controllers
+
+├── middlewares
+
+├── models
+
+├── routes
+
+├── sockets
+
+├── config
+
+├── app.js
+
+└── server.js
+
+---
+
+# Current Application Flow
+
+Register
+
+↓
+
 Login
-  ↓
-Send Message
-  ↓
-POST /api/messages
-  ↓
-MongoDB
-```
+
+↓
+
+JWT Cookie Created
+
+↓
+
+Redux User Updated
+
+↓
+
+Protected Route Access
+
+↓
+
+Chat Page
+
+↓
+
+Send Message API
+
+↓
+
+Get Chat History API
+
+↓
+
+Socket Connection
+
+↓
+
+Real-Time Messaging
 
 ---
 
-## Chat History
+# Completed
 
-```text
-User Selects Chat
-  ↓
-GET /api/messages/:userId
-  ↓
-Conversation Returned
-```
-
----
-
-## Real-Time Messaging
-
-```text
-Socket Connect
-  ↓
-Join Room
-  ↓
-Send Message Event
-  ↓
-Receive Message Event
-```
+* Authentication
+* JWT Cookies
+* Protected Routes
+* Redux Auth State
+* Session Restore
+* Messaging APIs
+* Chat History APIs
+* Socket.IO Setup
+* React Router
+* React Hook Form
+* Axios Integration
 
 ---
 
-# Upcoming Features
+# In Progress
 
 * Users Sidebar
-* Get All Users API
-* Online Users Tracking
-* Real-Time Chat UI
-* Group Chat
-* Typing Indicator
-* Last Seen Status
-* File Sharing
-* Deployment on Render
-* GitHub Repository Documentation
+* User List API
+* Chat UI
+* Real-Time UI Integration
 
 ---
 
-# Project Status
+# Pending
 
-### Completed
-
-* Authentication System
-* Protected Routes
-* Message APIs
-* React Frontend Setup
-* Authentication UI
-* API Integration
-* React Router Setup
-* Socket.IO Setup
-
-### In Progress
-
-* Users List API
-* Chat Interface
-* Real-Time Messaging UI
-
-### Pending
-
+* Online Users
 * Group Chat
 * Typing Indicator
+* Last Seen
+* File Sharing
+* Message Read Status
 * Deployment
+* README Improvements
