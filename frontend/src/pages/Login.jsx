@@ -4,21 +4,24 @@ import api from "../services/api";
 import { useNavigate } from "react-router";
 import { useDispatch } from "react-redux";
 import { addUser } from "../features/authSlice";
+import { loginAction } from "../features/authAction";
 
 const Login = () => {
+  let dispatch = useDispatch();
 
-  let dispatch = useDispatch()
+  let navigate = useNavigate();
 
-  let navigate = useNavigate()
   const handleLoginSubmit = async (data) => {
     try {
-      const response = await api.post("/auth/login", data);
-      dispatch(addUser(response.data.user))
+      // const response = await api.post("/auth/login", data);
+
+     let user = await dispatch(loginAction(data)).unwrap();
       navigate("/chat");
-      console.log(response.data);
+      console.log(user)
+      // console.log(response.data);
       reset();
     } catch (error) {
-      console.log(error.response?.data);
+      // console.log(error.response?.data);
     }
   };
 

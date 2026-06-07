@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, data, RouterProvider } from "react-router";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 import Chat from "../pages/Chat";
@@ -9,7 +9,7 @@ import PublicRoute from "../pages/PublicRoute";
 import Protected from "../pages/Protected";
 import api from "../services/api";
 import { useDispatch } from "react-redux";
-import { addUser, setLoadingFalse } from "../features/authSlice";
+import { addUser, removeUser } from "../features/authSlice";
 
 const AppRoutes = () => {
   let dispatch = useDispatch();
@@ -20,7 +20,7 @@ const AppRoutes = () => {
       dispatch(addUser(res.data.user));
       console.log(res);
     } catch (error) {
-      dispatch(setLoadingFalse());
+      dispatch(removeUser());
     }
   };
 
