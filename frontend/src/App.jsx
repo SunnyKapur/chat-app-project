@@ -1,19 +1,9 @@
-import React from "react";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import { useState } from "react";
+import React from 'react'
 
 const App = () => {
-  const [toggle, setToggle] = useState(true);
   return (
-    <div>
-      {toggle ? (
-        <Register setToggle={setToggle} />
-      ) : (
-        <Login setToggle={setToggle} />
-      )}
-    </div>
-  );
-};
+    <div>App</div>
+  )
+}
 
-export default App;
+export default App

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import api from "../services/api"
 
 const Register = ({ setToggle }) => {
+  
   const handleRegisterSubmit = async (data) => {
     try {
       const response = await api.post("/auth/register",data);
