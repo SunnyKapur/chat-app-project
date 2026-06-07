@@ -1,17 +1,21 @@
-import {createSlice} from "@reduxjs/toolkit"
+import { createSlice } from "@reduxjs/toolkit";
 
 export let userSlice = createSlice({
-    name: "auth",
-    initialState: {
-        user: null,
-        isAuthenticated: false
+  name: "auth",
+  initialState: {
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+  },
+  reducers: {
+    addUser: (state, action) => {
+      state.user = action.payload;
+      ((state.isAuthenticated = true), (state.isLoading = false));
     },
-    reducers: {
-        addUser: (state, action) => {
-            state.user = action.payload
-            state.isAuthenticated = true
-        }
-    }
-})
+    setLoadingFalse: (state) => {
+      state.isLoading = false;
+    },
+  },
+});
 
-export let {addUser} = userSlice.actions
+export let { addUser, setLoadingFalse } = userSlice.actions;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -7,8 +7,27 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import PublicRoute from "../pages/PublicRoute";
 import Protected from "../pages/Protected";
+import api from "../services/api";
+import { useDispatch } from "react-redux";
+import { addUser, setLoadingFalse } from "../features/authSlice";
 
 const AppRoutes = () => {
+  let dispatch = useDispatch();
+
+  let getMeFromServer = async () => {
+    try {
+      const res = await api.get("/auth/me");
+      dispatch(addUser(res.data.user));
+      console.log(res);
+    } catch (error) {
+      dispatch(setLoadingFalse());
+    }
+  };
+
+  useEffect(() => {
+    getMeFromServer();
+  }, []);
+
   const router = createBrowserRouter([
     {
       path: "/",

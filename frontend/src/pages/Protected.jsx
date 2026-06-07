@@ -3,7 +3,10 @@ import { useSelector } from "react-redux";
 import { Navigate, Outlet } from "react-router";
 
 const Protected = () => {
-  let { user, isAuthenticated } = useSelector((state) => state.auth);
+  let { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
+
+  if(isLoading) return <h1>Loading....</h1>
+
   if (!user) {
     return <Navigate to="/" />;
   }
