@@ -1,339 +1,309 @@
-# Real-Time Communication System (Backend)
+# Updated Current Progress
 
-## Overview
+## Backend Completed
 
-This project is a backend for a real-time communication system built with:
-
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* JWT Authentication
-
-The application currently supports:
+### Authentication
 
 * User Registration
 * User Login
-* JWT Authentication
-* Protected Routes
-* Sending Messages
-* Retrieving Chat History
+* JWT Token Generation
+* HTTP Only Cookie Authentication
+* Authentication Middleware
+* Protected Route (`/api/me`)
+
+### Messaging
+
+* Message Model
+* Send Message API
+* Chat History API
+* Self Message Validation
+
+### Socket.IO
+
+* Socket.IO Server Setup
+* Socket Connection Handling
+* Socket Disconnection Handling
+* User Room Setup Event
+* Send Message Socket Event
+* Receive Message Socket Event
 
 ---
 
-# Features Implemented
+## Frontend Completed
 
-## 1. User Registration
+### UI
 
-Users can create a new account by providing:
+* Register Page
+* Login Page
+* Chat Page Structure
+* Tailwind CSS Setup
 
-* Username
-* Email
-* Password
+### Form Handling
 
-### Endpoint
+* React Hook Form Integration
+* Form Validation
+* Register Form Submission
+* Login Form Submission
 
-POST /api/auth/register
+### API Integration
 
-### Request Body
+* Axios Setup
+* Register API Connected
+* Login API Connected
+* Cookie-Based Authentication Support
 
-```json
-{
-  "username": "sunny",
-  "email": "sunny@gmail.com",
-  "password": "123456"
-}
+### Routing
+
+* React Router Setup
+* Auth Layout
+* Main Layout
+* Chat Route
+
+Routes:
+
+```text
+/
+  └── Authentication Page
+
+/chat
+  └── Chat Page
 ```
 
 ---
 
-## 2. User Login
+# Frontend Structure
 
-Registered users can log in using their email and password.
-
-A JWT token is generated and stored in an HTTP-only cookie.
-
-### Endpoint
-
-POST /api/auth/login
-
-### Request Body
-
-```json
-{
-  "email": "sunny@gmail.com",
-  "password": "123456"
-}
+```text
+frontend
+│
+├── src
+│
+├── layouts
+│   ├── AuthLayout.jsx
+│   └── MainLayout.jsx
+│
+├── pages
+│   ├── Register.jsx
+│   ├── Login.jsx
+│   └── Chat.jsx
+│
+├── routes
+│   └── AppRoutes.jsx
+│
+├── services
+│   └── api.js
+│
+├── App.jsx
+├── main.jsx
+└── index.css
 ```
 
 ---
 
-## 3. Protected Route
+# Socket.IO Flow
 
-Protected routes can only be accessed by authenticated users.
+## Step 1
 
-The authentication middleware:
+Frontend connects to the Socket.IO server.
 
-* Reads JWT token from cookies
-* Verifies the token
-* Finds the user from the database
-* Attaches the user to `req.user`
-
-### Endpoint
-
-GET /api/me
-
-### Response
-
-Returns the currently logged-in user information.
+```text
+Client
+  ↓
+Socket Connection
+  ↓
+Server
+```
 
 ---
 
-## 4. Message Model
+## Step 2
 
-Each message contains:
-
-* Sender ID
-* Receiver ID
-* Message Content
-* Created Time
-* Updated Time
-
-### Schema Fields
+User joins a private room.
 
 ```javascript
-sender
-receiver
-content
-createdAt
-updatedAt
+socket.emit("setup", userId);
 ```
 
----
+Server:
 
-## 5. Send Message
-
-Authenticated users can send messages to another user.
-
-### Endpoint
-
-POST /api/messages
-
-### Request Body
-
-```json
-{
-  "receiver": "RECEIVER_USER_ID",
-  "content": "Hello Rahul"
-}
+```javascript
+socket.join(userId);
 ```
-
-### Validation
-
-* Receiver is required
-* Content is required
-* Users cannot send messages to themselves
-
-### Response
-
-```json
-{
-  "message": "Message sent successfully"
-}
-```
-
----
-
-## 6. Get Chat History
-
-Returns the complete conversation between the logged-in user and another user.
-
-### Endpoint
-
-GET /api/messages/:userId
-
-### Example
-
-```http
-GET /api/messages/USER_ID
-```
-
-### What It Returns
-
-The API returns:
-
-* Messages sent by the logged-in user
-* Messages received from the selected user
 
 Example:
 
 ```text
-Sunny -> Rahul
-Rahul -> Sunny
-Sunny -> Rahul
-Rahul -> Sunny
-```
-
-This creates a complete chat history similar to WhatsApp or Messenger conversations.
-
----
-
-# Project Structure
-
-```text
-backend
-│
-├── controllers
-│   ├── auth.controller.js
-│   └── message.controller.js
-│
-├── middlewares
-│   └── auth.middleware.js
-│
-├── models
-│   ├── user.model.js
-│   └── message.model.js
-│
-├── routes
-│   ├── auth.routes.js
-│   ├── protected.routes.js
-│   └── message.routes.js
-│
-├── app.js
-└── server.js
+Sunny → Room 111
+Rahul → Room 222
 ```
 
 ---
 
-# Authentication Flow
+## Step 3
 
-### Step 1
-
-Register a user.
-
-```text
-POST /api/auth/register
-```
-
-### Step 2
-
-Login using email and password.
-
-```text
-POST /api/auth/login
-```
-
-### Step 3
-
-Server creates a JWT token.
-
-### Step 4
-
-Token is stored in an HTTP-only cookie.
-
-### Step 5
-
-Protected routes verify the token using middleware.
-
-### Step 6
-
-Authenticated user information becomes available through:
+User sends a real-time message.
 
 ```javascript
+socket.emit("send-message", {
+  senderId,
+  receiverId,
+  content
+});
+```
+
+---
+
+## Step 4
+
+Server forwards the message.
+
+```javascript
+io.to(receiverId).emit(
+  "receive-message",
+  data
+);
+```
+
+---
+
+## Step 5
+
+Receiver gets the message instantly.
+
+```text
+Sunny
+  ↓
+Server
+  ↓
+Rahul
+```
+
+No page refresh required.
+
+---
+
+# Complete Application Flow
+
+## User Registration
+
+```text
+Register Form
+  ↓
+POST /api/auth/register
+  ↓
+MongoDB
+  ↓
+User Created
+```
+
+---
+
+## User Login
+
+```text
+Login Form
+  ↓
+POST /api/auth/login
+  ↓
+JWT Token Generated
+  ↓
+HTTP Only Cookie
+```
+
+---
+
+## Authentication
+
+```text
+Request
+  ↓
+Auth Middleware
+  ↓
+Verify JWT
+  ↓
+Find User
+  ↓
 req.user
 ```
 
 ---
 
-# Messaging Flow
-
-### Step 1
-
-User logs in.
-
-Example:
+## Messaging
 
 ```text
-Sunny logs in
-```
-
-### Step 2
-
-User sends a message.
-
-```text
+Login
+  ↓
+Send Message
+  ↓
 POST /api/messages
+  ↓
+MongoDB
 ```
-
-Request:
-
-```json
-{
-  "receiver": "Rahul_ID",
-  "content": "Hello Rahul"
-}
-```
-
-### Step 3
-
-Message is stored in MongoDB.
-
-Stored data:
-
-```text
-Sender
-Receiver
-Content
-Timestamp
-```
-
-### Step 4
-
-Retrieve conversation.
-
-```text
-GET /api/messages/Rahul_ID
-```
-
-### Step 5
-
-Server returns all messages between:
-
-```text
-Sunny ↔ Rahul
-```
-
-including:
-
-```text
-Sunny -> Rahul
-Rahul -> Sunny
-```
-
-ordered by creation time.
 
 ---
 
-# Current Progress
+## Chat History
 
-Completed:
+```text
+User Selects Chat
+  ↓
+GET /api/messages/:userId
+  ↓
+Conversation Returned
+```
 
-* User Registration
-* User Login
-* JWT Authentication
-* Protected Routes
-* Message Model
-* Send Message API
-* Chat History API
+---
 
-Next:
+## Real-Time Messaging
 
-* Socket.IO Integration
-* Real-Time Messaging
-* Online Users
+```text
+Socket Connect
+  ↓
+Join Room
+  ↓
+Send Message Event
+  ↓
+Receive Message Event
+```
+
+---
+
+# Upcoming Features
+
+* Users Sidebar
+* Get All Users API
+* Online Users Tracking
+* Real-Time Chat UI
 * Group Chat
-* Typing Indicators
-* Deployment
+* Typing Indicator
+* Last Seen Status
+* File Sharing
+* Deployment on Render
+* GitHub Repository Documentation
 
-```
-```
+---
+
+# Project Status
+
+### Completed
+
+* Authentication System
+* Protected Routes
+* Message APIs
+* React Frontend Setup
+* Authentication UI
+* API Integration
+* React Router Setup
+* Socket.IO Setup
+
+### In Progress
+
+* Users List API
+* Chat Interface
+* Real-Time Messaging UI
+
+### Pending
+
+* Group Chat
+* Typing Indicator
+* Deployment
