@@ -1,18 +1,24 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import api from "../services/api";
 
 const Login = ({ setToggle }) => {
+  const handleLoginSubmit = async (data) => {
+    try {
+      const response = await api.post("/auth/login", data);
+      console.log(response.data);
+      reset();
+    } catch (error) {
+      console.log(error.response?.data);
+    }
+  };
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm();
-
-  let handFormSubmit = (data) => {
-    console.log(data);
-    reset();
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
@@ -22,12 +28,12 @@ const Login = ({ setToggle }) => {
           <p className="text-slate-400 mt-2">Login to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit(handFormSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(handleLoginSubmit)} className="space-y-5">
           {/* Email */}
           <div>
             <label className="block text-sm text-slate-300 mb-2">Email</label>
             <input
-              {...register("email", { required: true })}
+              {...register("email", { required: "email is required" })}
               type="email"
               placeholder="Enter your email"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
@@ -40,7 +46,7 @@ const Login = ({ setToggle }) => {
               Password
             </label>
             <input
-              {...register("password", { required: true })}
+              {...register("password", { required: "password is required" })}
               type="password"
               placeholder="Enter your password"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"

@@ -1,8 +1,26 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import api from "../services/api"
 
 const Register = ({ setToggle }) => {
-  const { register, handleSubmit, reset, formState: {errors} } = useForm();
+  const handleRegisterSubmit = async (data) => {
+    try {
+      const response = await api.post("/auth/register",data);
+      console.log(response.data);
+      alert("user registered successfully");
+      reset()
+    } catch (error) {
+         console.log(error);
+      console.log(error.response?.data);
+    }
+  };
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
@@ -11,19 +29,17 @@ const Register = ({ setToggle }) => {
           <p className="text-slate-400 mt-2">Register to get started</p>
         </div>
 
-        <form 
-        onSubmit={handleSubmit((data) => {
-            console.log(data)
-            reset()
-        })}
-        className="space-y-5">
+        <form
+          onSubmit={handleSubmit(handleRegisterSubmit)}
+          className="space-y-5"
+        >
           {/* Username */}
           <div>
             <label className="block text-sm text-slate-300 mb-2">
               Username
             </label>
             <input
-            {...register("username", {required: true})}
+              {...register("username", { required: "username is required" })}
               type="text"
               placeholder="Enter your username"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
@@ -34,7 +50,7 @@ const Register = ({ setToggle }) => {
           <div>
             <label className="block text-sm text-slate-300 mb-2">Email</label>
             <input
-            {...register("email", {required: true})}
+              {...register("email", { required: "email is required" })}
               type="email"
               placeholder="Enter your email"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
@@ -47,7 +63,7 @@ const Register = ({ setToggle }) => {
               Password
             </label>
             <input
-            {...register("password", {required: true})}
+              {...register("password", { required: "password is required" })}
               type="password"
               placeholder="Enter your password"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
