@@ -1,11 +1,20 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import api from "../services/api";
+import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { addUser } from "../features/authSlice";
 
-const Login = ({ setToggle }) => {
+const Login = () => {
+
+  let dispatch = useDispatch()
+
+  let navigate = useNavigate()
   const handleLoginSubmit = async (data) => {
     try {
       const response = await api.post("/auth/login", data);
+      dispatch(addUser(response.data.user))
+      navigate("/chat");
       console.log(response.data);
       reset();
     } catch (error) {
@@ -65,7 +74,7 @@ const Login = ({ setToggle }) => {
         <p className="text-center text-slate-400 text-sm mt-6">
           Don't have an account?{" "}
           <span
-            onClick={() => setToggle((pre) => !pre)}
+            onClick={() => navigate("/register")}
             className="text-indigo-400 cursor-pointer hover:text-indigo-300"
           >
             Register

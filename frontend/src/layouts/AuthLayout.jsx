@@ -1,16 +1,11 @@
-import React, { useState } from "react";
-import Register from "../pages/Register";
-import Login from "../pages/Login";
+import React from "react";
+import { Outlet } from "react-router";
 
 const AuthLayout = () => {
-  const [toggle, setToggle] = useState(true);
+
   return (
     <div>
-      {toggle ? (
-        <Register setToggle={setToggle} />
-      ) : (
-        <Login setToggle={setToggle} />
-      )}
+      <Outlet />
     </div>
   );
 };

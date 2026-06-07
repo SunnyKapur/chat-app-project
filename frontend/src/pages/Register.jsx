@@ -1,9 +1,11 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import api from "../services/api"
+import { useNavigate } from "react-router";
 
-const Register = ({ setToggle }) => {
-  
+const Register = () => {
+  let navigate = useNavigate()
+
   const handleRegisterSubmit = async (data) => {
     try {
       const response = await api.post("/auth/register",data);
@@ -83,7 +85,7 @@ const Register = ({ setToggle }) => {
         <p className="text-center text-slate-400 text-sm mt-6">
           Already have an account?{" "}
           <span
-            onClick={() => setToggle((pre) => !pre)}
+            onClick={() => navigate("/")}
             className="text-indigo-400 cursor-pointer hover:text-indigo-300"
           >
             Login
