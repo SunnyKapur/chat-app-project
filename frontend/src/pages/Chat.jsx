@@ -7,11 +7,23 @@ import { useState } from "react";
 import { useEffect } from "react";
 
 const Chat = () => {
+  const { user: currentUser } = useSelector((state) => state.auth);
+
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [content, setContent] = useState("");
 
-  const { user: currentUser } = useSelector((state) => state.auth);
+  const handleSendMessage = async () => {
+    const res = await api.post("/messages", {
+      receiver: selectedUser._id,
+      content,
+    });
+
+    setMessages((prev) => [...prev, res.data.data]);
+    setContent("");
+    console.log(res.data);
+  };
 
   const fetchMessages = async (userId) => {
     try {
@@ -137,30 +149,31 @@ const Chat = () => {
 
         {/* Messages */}
         {/* <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4"> */}
-          {/* Received */}
+        {/* Received */}
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-            {messages.map((msg) => (
-              <div key={msg._id}>
-                {msg.sender.toString() === currentUser._id.toString() ? (
-                  <div className="flex justify-start">
-                    <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl">
-                      {msg.content}
-                    </div>
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          {messages.map((msg) => {
+            if (!msg?.sender || !currentUser?._id) return null;
+           return <div key={msg._id}>
+              {msg?.sender?.toString() === currentUser?._id?.toString() ? (
+                <div className="flex justify-end">
+                  <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl">
+                    {msg.content}
                   </div>
-                ) : (
-                  <div className="flex justify-end">
-                    <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl">
-                      {msg.content}
-                    </div>
+                </div>
+              ) : (
+                <div className="flex justify-start">
+                  <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl">
+                    {msg.content}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </div>
+              )}
+            </div>;
+          })}
+        </div>
 
-          {/* Sent */}
-          {/* <div className="flex justify-end">
+        {/* Sent */}
+        {/* <div className="flex justify-end">
             <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl rounded-br-md">
               <p>Hey! How are you?</p>
               <span className="text-xs text-indigo-200 mt-1 block">
@@ -169,7 +182,7 @@ const Chat = () => {
             </div>
           </div> */}
 
-          {/* <div className="flex justify-start">
+        {/* <div className="flex justify-start">
             <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
               <p>I'm doing great. Working on a chat application UI.</p>
               <span className="text-xs text-slate-400 mt-1 block">
@@ -178,7 +191,7 @@ const Chat = () => {
             </div>
           </div> */}
 
-          {/* <div className="flex justify-end">
+        {/* <div className="flex justify-end">
             <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl rounded-br-md">
               <p>Looks awesome 🔥</p>
               <span className="text-xs text-indigo-200 mt-1 block">
@@ -193,11 +206,16 @@ const Chat = () => {
           <div className="flex gap-3">
             <input
               type="text"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               placeholder="Type a message..."
               className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
             />
 
-            <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-medium transition">
+            <button
+              onClick={handleSendMessage}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-medium transition"
+            >
               Send
             </button>
           </div>
