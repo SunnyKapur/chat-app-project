@@ -5,6 +5,7 @@ import { removeUser } from "../features/authSlice";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { useEffect } from "react";
+import socket from "../services/socket";
 
 const Chat = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
@@ -19,6 +20,14 @@ const Chat = () => {
       receiver: selectedUser._id,
       content,
     });
+
+    // frontend se real time data send
+    socket.emit("send-message", {
+      _id: res.data.data._id,
+      sender: currentUser._id,
+      receiver: selectedUser._id,
+      content,
+    })
 
     setMessages((prev) => [...prev, res.data.data]);
     setContent("");
@@ -42,24 +51,55 @@ const Chat = () => {
     console.log(res.data.users);
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-  useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser._id);
-    }
-  }, [selectedUser]);
-
   let dispatch = useDispatch();
 
   const navigate = useNavigate();
+
   let handleLogout = async () => {
     await api.get("/auth/logout");
     dispatch(removeUser());
     alert("user logged out");
     navigate("/");
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchMessages(selectedUser._id);
+    }
+  }, [selectedUser]);
+
+
+  //useEffect mein-component mount hone par setup karo
+  useEffect(() => {
+    if (currentUser?._id) {
+      socket.emit("setup", currentUser._id);
+    }
+  }, [currentUser]);
+
+  // useEffect mein - recevie-message sun-te  raho
+  useEffect(() => {
+    socket.on("recevie-message", (data) => {
+      // tab add karo jab same conversation open ho
+      if (selectedUser?._id === data.sender) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            _id: data._id,
+            sender: data.sender,
+            receiver: data.receiver,
+            content: data.content,
+          },
+        ]);
+      }
+    });
+
+    return () => socket.off("receive-message"); // cleanup
+  }, [selectedUser]);
+
   return (
     <div className="h-screen bg-slate-950 text-white flex overflow-hidden">
       {/* Sidebar */}
@@ -154,52 +194,25 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
           {messages.map((msg) => {
             if (!msg?.sender || !currentUser?._id) return null;
-           return <div key={msg._id}>
-              {msg?.sender?.toString() === currentUser?._id?.toString() ? (
-                <div className="flex justify-end">
-                  <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl">
-                    {msg.content}
+            return (
+              <div key={msg._id}>
+                {msg?.sender?.toString() === currentUser?._id?.toString() ? (
+                  <div className="flex justify-end">
+                    <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl">
+                      {msg.content}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex justify-start">
-                  <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl">
-                    {msg.content}
+                ) : (
+                  <div className="flex justify-start">
+                    <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl">
+                      {msg.content}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>;
+                )}
+              </div>
+            );
           })}
         </div>
-
-        {/* Sent */}
-        {/* <div className="flex justify-end">
-            <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl rounded-br-md">
-              <p>Hey! How are you?</p>
-              <span className="text-xs text-indigo-200 mt-1 block">
-                10:31 AM
-              </span>
-            </div>
-          </div> */}
-
-        {/* <div className="flex justify-start">
-            <div className="max-w-md bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
-              <p>I'm doing great. Working on a chat application UI.</p>
-              <span className="text-xs text-slate-400 mt-1 block">
-                10:32 AM
-              </span>
-            </div>
-          </div> */}
-
-        {/* <div className="flex justify-end">
-            <div className="max-w-md bg-indigo-600 px-4 py-3 rounded-2xl rounded-br-md">
-              <p>Looks awesome 🔥</p>
-              <span className="text-xs text-indigo-200 mt-1 block">
-                10:33 AM
-              </span>
-            </div>
-          </div> */}
-        {/* </div> */}
 
         {/* Input */}
         <div className="p-4 border-t border-slate-800 bg-slate-900 sticky bottom-0">
