@@ -11,6 +11,3 @@ router.get("/:groupId/messages", authMiddleware, getGroupMessages)
 
 
 export default router;
-
-
-

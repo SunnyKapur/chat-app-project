@@ -80,10 +80,10 @@ export const sendGroupMessage = async (req, res) => {
       {
         $push: { messages: { sender: req.user._id, content } },
       },
-      { new: true },
+      { returnDocument: "after" },
     ).populate("messages.sender", "username");
 
-    const lastMsg = group.message[group.messages.length - 1];
+    const lastMsg = group.messages[group.messages.length - 1];
 
     return res.status(201).json({
       message: "Message sent",
@@ -109,15 +109,13 @@ export const getGroupMessages = async (req, res) => {
       "username",
     );
 
-    return res.status(200).json({ message: group.messages });
+    return res.status(200).json({ messages: group.messages });
   } catch (error) {
     return res.status(500).json({
       message: error.message,
     });
   }
 };
-
-
 
 // createGroup
 // Naya group create karta hai aur creator ko admin/member banata hai.

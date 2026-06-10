@@ -18,6 +18,7 @@ Users can register, log in, exchange private messages, view chat history, and co
 | React Hook Form | Form Handling |
 | Axios | HTTP Requests |
 | Tailwind CSS | Styling |
+| Socket.IO Client | Real-Time Communication |
 
 ### Backend
 
@@ -45,29 +46,44 @@ Users can register, log in, exchange private messages, view chat history, and co
 - Logout Functionality
 
 ### Messaging
-- Send Private Messages
+- Send Private Messages (One-to-One)
 - Retrieve Full Conversation History
 - Message Validation
 - Self-Messaging Prevention
 
+### Group Chat
+- Create New Groups with custom name
+- Add multiple members while creating group
+- Send & receive messages in real time within the group
+- Group chat history stored in database
+- Group details shown in header (name + member count)
+- Group avatar with first letter of group name
+
 ### Users
-- Fetch All Users
+- Fetch All Users (excluding current user)
 - Users Sidebar with Online Status Indicator
 - Select User to Open Chat
 
 ### Chat Interface
 - Two-column layout (Sidebar + Chat Area)
-- Messages displayed correctly — **sent messages on the right (indigo), received on the left (dark)**
+- **Direct Messages tab** and **Groups tab** in sidebar
+- Messages displayed correctly — sent messages on the right (indigo), received on the left (dark)
+- Group messages show sender's username above the bubble
 - Sender vs. Receiver detection using `currentUser._id`
-- Input box with Send button
-- Chat header shows selected user's name and online status
+- Input box with smart Send button (works for both DM and Group)
+- Chat header shows selected user/group name and online status / member count
+- Create Group modal with member selection (checkbox style)
 
 ### Real-Time Communication
 - Socket.IO Server Setup
-- User Room Management (each user joins private room by `userId`)
-- `send-message` Event (Client → Server)
-- `receive-message` Event (Server → Receiver)
+- Private room per user (`socket.join(userId)`)
+- Group room per group (`socket.join('group-' + groupId)`)
+- `send-message` / `receive-message` Events (One-to-One)
+- `send-group-message` / `receive-group-message` Events (Group)
+- `join-group` Event — user joins group socket room on group select
+- `setup` Event — user joins private room on login
 - Connection & Disconnection Handling
+- `useRef` used to prevent stale closure in socket listeners
 
 ---
 
@@ -188,6 +204,70 @@ GET /api/users             (Auth Required)
 
 ---
 
+### Group Routes
+
+#### Create Group
+```
+POST /api/groups           (Auth Required)
+```
+```json
+// Request Body
+{
+  "name": "MERN Group",
+  "members": ["USER_ID_1", "USER_ID_2"]
+}
+
+// Response
+{
+  "message": "Group created",
+  "group": {}
+}
+```
+> Creator is automatically added as admin and member.
+
+#### Get My Groups
+```
+GET /api/groups            (Auth Required)
+```
+```json
+// Response
+{
+  "groups": []
+}
+```
+> Returns all groups where current user is a member.
+
+#### Send Group Message
+```
+POST /api/groups/:groupId/messages   (Auth Required)
+```
+```json
+// Request Body
+{
+  "content": "Hello everyone!"
+}
+
+// Response
+{
+  "message": "Message sent",
+  "data": {}
+}
+```
+
+#### Get Group Messages
+```
+GET /api/groups/:groupId/messages    (Auth Required)
+```
+```json
+// Response
+{
+  "messages": []
+}
+```
+> Returns all messages of the group with sender username populated.
+
+---
+
 ## 🗃️ Database Models
 
 ### User Model
@@ -195,7 +275,7 @@ GET /api/users             (Auth Required)
 {
   username,
   email,
-  password,   // hashed
+  password,   // bcrypt hashed
   avatar,
   lastSeen,
   createdAt,
@@ -209,6 +289,24 @@ GET /api/users             (Auth Required)
   sender,     // ref: User
   receiver,   // ref: User
   content,
+  createdAt,
+  updatedAt
+}
+```
+
+### Group Model
+```javascript
+{
+  name,
+  members,    // [ref: User]
+  admin,      // ref: User
+  messages: [
+    {
+      sender,   // ref: User
+      content,
+      createdAt
+    }
+  ],
   createdAt,
   updatedAt
 }
@@ -285,24 +383,50 @@ Async Actions: `loginAction()`
 
 ## ⚡ Socket.IO Events
 
+### One-to-One (DM)
+
 | Event | Direction | Purpose |
 |---|---|---|
 | `connection` | Server | User connects |
-| `setup` | Client → Server | User joins private room (`socket.join(userId)`) |
-| `send-message` | Client → Server | Sends message data |
-| `receive-message` | Server → Client | Delivers message to receiver's room |
+| `setup` | Client → Server | User joins private room |
+| `send-message` | Client → Server | Send DM data |
+| `receive-message` | Server → Client | Deliver DM to receiver |
 | `disconnect` | Server | User disconnects |
 
-### Real-Time Messaging Flow
+### Group Chat
+
+| Event | Direction | Purpose |
+|---|---|---|
+| `join-group` | Client → Server | User joins group socket room |
+| `send-group-message` | Client → Server | Send group message data |
+| `receive-group-message` | Server → All members | Broadcast to group room |
+
+### Real-Time Flow — DM
 
 ```
-User A
-   ↓
-Send Message (API + Socket emit)
-   ↓
-Server → io.to(receiverId).emit("receive-message", data)
-   ↓
-User B receives message instantly
+User A sends message
+    ↓
+API: POST /api/messages (saved to DB)
+    ↓
+socket.emit("send-message", data)
+    ↓
+Server: io.to(receiver).emit("receive-message", data)
+    ↓
+User B receives instantly ✅
+```
+
+### Real-Time Flow — Group
+
+```
+User A sends group message
+    ↓
+API: POST /api/groups/:id/messages (saved to DB)
+    ↓
+socket.emit("send-group-message", data)
+    ↓
+Server: io.to("group-<groupId>").emit("receive-group-message", data)
+    ↓
+All group members receive instantly ✅
 ```
 
 ---
@@ -329,7 +453,8 @@ frontend/src/
 ├── routes/
 │   └── AppRoutes.jsx
 ├── services/
-│   └── api.js
+│   ├── api.js
+│   └── socket.js
 ├── main.jsx
 └── index.css
 ```
@@ -340,16 +465,21 @@ backend/src/
 ├── config/
 ├── controllers/
 │   ├── auth.controller.js
-│   └── message.controller.js
+│   ├── message.controller.js
+│   ├── user.controller.js
+│   └── group.controller.js
 ├── middlewares/
 │   └── auth.middleware.js
 ├── models/
 │   ├── user.model.js
-│   └── message.model.js
+│   ├── message.model.js
+│   └── group.model.js
 ├── routes/
 │   ├── auth.routes.js
 │   ├── protected.routes.js
-│   └── message.route.js
+│   ├── message.route.js
+│   ├── user.routes.js
+│   └── group.routes.js
 ├── sockets/
 │   └── socket.server.js
 ├── app.js
@@ -367,23 +497,21 @@ backend/src/
 - Redux Auth State Management
 - Protected & Public Routes
 - Logout Functionality
-- Send Message API
+- Send Message API (One-to-One)
 - Chat History API
 - Get All Users API
-- Socket.IO Setup (server + client)
-- Users Sidebar UI
+- Group Chat APIs (Create, Get Groups, Send Message, Get Messages)
+- Socket.IO Setup — DM + Group real-time events
+- `useRef` fix for stale closure in socket listeners
+- Users Sidebar UI with DM / Groups tabs
 - Chat Interface UI (send/receive bubbles, correct alignment)
-- Message sender detection (`currentUser._id` comparison)
+- Group Chat UI (create modal, member selection, group list)
+- Group messages with sender username display
 - React Router Setup
 - React Hook Form Integration
 - Axios Integration
 
-### 🔧 In Progress
-- Real-Time UI Integration (Socket receive-message event → update state)
-
----
-
-## 🔮 Pending Features
+### 🔮 Pending Features
 
 - [ ] Online Users (real-time presence)
 - [ ] Typing Indicator
@@ -391,7 +519,6 @@ backend/src/
 - [ ] Message Read / Delivered Status
 - [ ] File & Image Sharing
 - [ ] Push Notifications
-- [ ] Group Chat
 - [ ] Deployment
 - [ ] Production Optimization
 
@@ -406,13 +533,15 @@ Login → JWT Cookie → Redux User
     ↓
 Protected Route → /chat
     ↓
-Users Sidebar → Fetch All Users
+Users Sidebar → Fetch All Users + Groups
     ↓
-Select User → Load Message History
+DM Tab → Select User → Load Message History
     ↓
-Send Message → API + Socket Emit
+Send Message → API + Socket Emit → Real-Time Delivery ✅
     ↓
-Receiver Gets Message Instantly (Socket)
+Groups Tab → Create Group / Select Group
     ↓
-UI Updates Without Refresh
+Join Group Socket Room → Load Group Messages
+    ↓
+Send Group Message → API + Socket Broadcast → All Members Get It ✅
 ```
